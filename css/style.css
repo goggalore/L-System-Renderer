@@ -8,13 +8,20 @@ html, body
 }
 
 canvas {
-  background: white;
+  background: #2F2F2F;
   width: 100%;
   height: 100%;
 }
 
-/* left align form */
-#form
+input, button
+{
+  border-color: #2F2F2F !important;
+  background-color: #292929 !important;
+  color: #33D69D !important;
+}
+
+/* positioning */
+#input
 {
   position: absolute;
   top: 8px;

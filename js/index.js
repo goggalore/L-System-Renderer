@@ -1,94 +1,62 @@
-// first ever project in JS
+generateDomElements();
+addEventListeners();
 
-// executes when the DOM is fully loaded
-window.onload = function() {
+var canvas = document.getElementById('canvas');
+var context = canvas.getContext('2d');
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+var center = {x: canvas.width/2, y: canvas.height/2};
+var maxDimension = {width: canvas.width * 0.5, height: canvas.height * 0.85};
+
+window.onresize = function () {
   
-  form.setAttribute('autocomplete', 'off');
-  
-  // intialize canvas
-  var canvas = document.getElementById('canvas');
-  var ctx = canvas.getContext('2d');  
-  
-  canvas.width  = window.innerWidth;
+  canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+  center = {x: canvas.width/2, y: canvas.height/2};
+  maxDimension = {width: canvas.width * 0.5, height: canvas.height * 0.85};
   
-  var center = {x: canvas.width/2, y: canvas.height/2};
-  var maxDimension = {width: canvas.width * 0.5, height: canvas.height * 0.85};
-  
-  var userSystem = document.querySelector('#form');
-  var infoButtons = document.querySelector('#info');
-  var presetButtons = document.querySelector('#presets');
-  
-  function drawSystem(event) {
-    
-    ctx.restore();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    var model = getModel();    
-    var lString = lSystem(model, model.iterations);   
-    
-    if (lString == 'ERROR' && model.axiom != false) {
-      sweetAlert({title: 'Image too complex to compute!',
-           text: 'Try lowering the number of iterations'});
-      return false;
-    }
-    
-    var path = computePath(lString, model.angle, model.orientation);
-    var bounds = getBounds(path);   
-    var scale = computeScale(bounds, maxDimension);
-    
-    ctx.save();
-    ctx.beginPath();
-    
-    ctx.scale(scale, scale);
-    ctx.translate(center['x']/scale - bounds.center['x'], center['y']/scale - bounds.center['y']);
-    ctx.lineWidth = 1/scale;
-    
-    for (var k = 0; k < path.length; k++) {
-      if (path[k]['action'] == 'draw') {
-        ctx.lineTo(path[k].x, path[k].y); 
-      }
-      else {
-        ctx.moveTo(path[k].x, path[k].y);
-      }
-    }
-    ctx.stroke();
-    
-  }
-  
-  for (var i = 0; i < userSystem.length; i++) {
-    userSystem[i].addEventListener('input', drawSystem);
-  }
-  
-  infoButtons['lsystem'].addEventListener('click', function(event) { 
-    swal({
-    title: 'What\'s an L-System?',
-    text: lSystemDescription});
-    event.preventDefault(); 
-  });
-  
-  infoButtons['commands'].addEventListener('click', function(event) { 
-    swal({
-    title: 'Commands',
-    text: commandDescription});
-    event.preventDefault(); 
-  });
-  
-  for (var l = 0; l < presetButtons.length; l++) {
-    presetButtons[l].addEventListener('click', function(event) {
-      setPreset(window[this.name]);
-      drawSystem(); 
-      event.preventDefault();
-    });
+  drawSystem();
 }
- 
-  window.onresize = function() {
-    canvas.width  = window.innerWidth;
-    canvas.height = window.innerHeight;
-    center = {x: canvas.width/2, y: canvas.height/2};
-    maxDimension = {width: canvas.width * 0.5, height: canvas.height * 0.85};
-    drawSystem();
+
+function drawSystem(event) {
+  
+  context.restore();
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  
+  var model = getModel();
+  var lString = lSystem(model, model.iterations);
+  
+  if (lString === 'ERROR' && model.axiom != false) {
+    sweetAlert({title: 'Image too complex to compute!',
+                text: 'Try lowering the number of iterations'});
+    return false;
   }
+  
+  var path = computePath(lString, model.angle, model.orientation);
+  var bounds = getBounds(path);
+  var scale = computeScale(bounds, maxDimension);
+  
+  context.save();
+  context.beginPath();
+  
+  context.scale(scale, scale);
+  context.translate(center['x']/scale - bounds.center['x'],
+                   center['y']/scale - bounds.center['y']);
+  context.lineWidth = 1/scale;
+  context.strokeStyle = "black"
+  
+  for (var i = 0; i < path.length; i++) {
+    if (path[i]['action'] === 'draw') {
+      context.lineTo(path[i].x, path[i].y);
+    }
+    else {
+      context.moveTo(path[i].x, path[i].y);
+    }
+  }
+  context.stroke();
+  
 }
 
 function lSystem(model, iterations) {
@@ -96,9 +64,9 @@ function lSystem(model, iterations) {
   var result = model.axiom.split('');
   var MAXLENGTH = 1000000; // to disallow this string from getting too huge
 
-  for(var l = 0; l < iterations; l++) {
+  for(var i = 0; i < iterations; i++) {
     result = result.map(function(char) {
-      if(model.rules[char] == undefined) {
+      if(model.rules[char] === undefined) {
         return char;
       }
       else {
@@ -116,24 +84,31 @@ function lSystem(model, iterations) {
   return result.join('');
 }
 
+
 function computePath(string, angle, orientation) {
   
-  const RADIUS = 1;
-  angle *= Math.PI / 180;
-  
+  const RADIUS = 1;  
   var position = {
     x: 0, 
     y: 0,
     action: 'move'
   };
-  
-  orientation = orientation * Math.PI / 180; 
-  
   var positionStack = []; 
   var path = [{x: position.x, y: position.y}];
+  var char = '';
   
-  for(var i = 0; i < string.length; i++) {
-    switch(string[i]) {
+  angle *= Math.PI / 180
+  orientation = orientation * Math.PI / 180; 
+  
+  for (var i in string) {
+    char = string[i];
+    
+    if (isLowerAlpha(char)) {
+      path.push({x: position.x, y: position.y, action: 'draw'});
+    }
+    
+    else {
+      switch(char) {
       case '+':
         orientation += angle;
         break;
@@ -151,22 +126,27 @@ function computePath(string, angle, orientation) {
         orientation = temp.orientation;
         path.push({x: position.x, y: position.y, action: 'move'});
         break;
-      case 'C':
-      case 'W':
-      case 'X':
-      case 'Y':
-      case 'Z':
-        path.push({x: position.x, y: position.y, action: 'draw'});
-        break;
       default:
         position.x += RADIUS * Math.cos(orientation); 
         position.y -= RADIUS * Math.sin(orientation);
         path.push({x: position.x, y: position.y, action: 'draw'});
         break;
+      }
     }
   }
   
   return path;
+}
+
+function isLowerAlpha(char) {
+  
+  var charIndex = char.charCodeAt();
+  
+  if (charIndex >= 'a'.charCodeAt() && charIndex <= 'z'.charCodeAt()) {
+    return true;
+  }
+  
+  return false;
 }
 
 function getBounds(path) {
@@ -221,7 +201,7 @@ function computeScale(bounds, maxDimension) {
     height: bounds.yMax - bounds.yMin
   };
 
-  if (maxDimension.width/dimension.width <= 
+  if (maxDimension.width/dimension.width <=
       maxDimension.height/dimension.height) {
     scale = maxDimension.width / dimension.width;
   }
@@ -230,51 +210,4 @@ function computeScale(bounds, maxDimension) {
   }
   
   return scale;
-}
-
-function getModel() { 
-  
-  var form = document.querySelector('#form');
-  var model = {axiom: '',
-               rules: {}};
-  
-  model['iterations'] = form['iterations'].value;
-  model['axiom'] = form['axiom'].value;
-  model['angle'] = form['angle'].value;
-  model['orientation'] = form['orientation'].value;
-  
-  for (var i = 0; i < form.length; i++) {
-    if (form[i].name == 'initialState') {
-      model.rules[form[i].value] = form[i + 1].value;
-    }
-  }
-  
-  return model;
-}
-
-function setPreset(model) {
-  
-  var form = document.querySelector('#form');
-  var counter = 0;
-  
-  form['iterations'].value = model.iterations;
-  form['angle'].value = model.angle;
-  form['axiom'].value = model.axiom;
-  form['orientation'].value = model.orientation;
-    
-  for (var i = 0; i < form.length; i++) {
-    if (form[i].name == 'initialState') {
-      form[i].value = model.variables[counter];
-    }
-    
-    else if (form[i].name == 'finalState') {
-      form[i].value = model.rules[model.variables[counter]];
-      counter++;
-    }
-    
-    // don't show that these are undefined on UI if undefined
-    if (form[i].value == 'undefined') {
-      form[i].value = '';
-    }
-  }
 }
